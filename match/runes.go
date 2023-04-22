@@ -3,7 +3,6 @@ package match
 import (
 	"github.com/zostay/go-std/slices"
 
-	"github.com/zostay/gordy"
 	"github.com/zostay/gordy/parser"
 	"github.com/zostay/gordy/token"
 )
@@ -95,7 +94,7 @@ type Runes struct {
 func OneRune(
 	t token.Tag,
 	preds ...RunePredicate,
-) gordy.Matcher {
+) parser.Matcher {
 	return &Runes{
 		t:    t,
 		from: 1,
@@ -112,7 +111,7 @@ func NRunes(
 	t token.Tag,
 	from, to int,
 	preds ...RunePredicate,
-) gordy.Matcher {
+) parser.Matcher {
 	return &Runes{
 		t:    t,
 		from: from,
@@ -123,16 +122,16 @@ func NRunes(
 
 // Match returns a Match with the configured token.Tag if the next byte in the
 // input matches the predicate. It returns nil otherwise.
-func (r *Runes) Match(p *gordy.Parser) (*parser.Match, error) {
+func (r *Runes) Match(p *parser.Input) (*parser.Match, error) {
 	rs := make([]rune, r.from, r.from+r.to)
 	for i := 0; i < r.from; i++ {
 		c, ok, err := r.matchOne(p)
 		if err != nil {
-			p.Trace(gordy.StageFail, "Runes.Match", r.t, r.from, r.to, r.pred, i, err)
+			p.Trace(parser.StageFail, "Runes.Match", r.t, r.from, r.to, r.pred, i, err)
 			return nil, err
 		}
 
-		p.Trace(gordy.StageTry, "Runes.Match", r.t, r.from, r.to, r.pred, i)
+		p.Trace(parser.StageTry, "Runes.Match", r.t, r.from, r.to, r.pred, i)
 		if !ok {
 			return nil, nil
 		}
@@ -143,11 +142,11 @@ func (r *Runes) Match(p *gordy.Parser) (*parser.Match, error) {
 	for i := r.from; i < r.to; i++ {
 		c, ok, err := r.matchOne(p)
 		if err != nil {
-			p.Trace(gordy.StageFail, "Runes.Match", r.t, r.from, r.to, r.pred, i, err)
+			p.Trace(parser.StageFail, "Runes.Match", r.t, r.from, r.to, r.pred, i, err)
 			return nil, err
 		}
 
-		p.Trace(gordy.StageTry, "Runes.Match", r.t, r.from, r.to, r.pred, i)
+		p.Trace(parser.StageTry, "Runes.Match", r.t, r.from, r.to, r.pred, i)
 		if !ok {
 			break
 		}
@@ -156,13 +155,13 @@ func (r *Runes) Match(p *gordy.Parser) (*parser.Match, error) {
 	}
 
 	m := &parser.Match{Tag: r.t, Content: []byte(string(rs))}
-	p.Trace(gordy.StageGot, "Runes.Match", r.t, r.from, r.to, r.pred, m)
+	p.Trace(parser.StageGot, "Runes.Match", r.t, r.from, r.to, r.pred, m)
 	return m, nil
 }
 
 // matchOne returns the matched rune and true or zero and false if no rune was
 // matched.
-func (r *Runes) matchOne(p *gordy.Parser) (rune, bool, error) {
+func (r *Runes) matchOne(p *parser.Input) (rune, bool, error) {
 	var rs [1]rune
 	_, err := p.ReadRunes(rs[:])
 	if err != nil {

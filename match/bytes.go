@@ -3,7 +3,6 @@ package match
 import (
 	"github.com/zostay/go-std/slices"
 
-	"github.com/zostay/gordy"
 	"github.com/zostay/gordy/parser"
 	"github.com/zostay/gordy/token"
 )
@@ -95,7 +94,7 @@ type Bytes struct {
 func OneByte(
 	t token.Tag,
 	preds ...BytePredicate,
-) gordy.Matcher {
+) parser.Matcher {
 	return &Bytes{
 		t:    t,
 		pred: AnyBytes(preds...),
@@ -110,7 +109,7 @@ func NBytes(
 	t token.Tag,
 	from, to int,
 	preds ...BytePredicate,
-) gordy.Matcher {
+) parser.Matcher {
 	return &Bytes{
 		t:    t,
 		from: from,
@@ -121,16 +120,16 @@ func NBytes(
 
 // Match returns a Match with the configured token.Tag if the next byte in the
 // input matches the predicate. It returns nil otherwise.
-func (b *Bytes) Match(p *gordy.Parser) (*parser.Match, error) {
+func (b *Bytes) Match(p *parser.Input) (*parser.Match, error) {
 	bs := make([]byte, b.from, b.from+b.to)
 	for i := 0; i <= b.from; i++ {
 		c, ok, err := b.matchOne(p)
 		if err != nil {
-			p.Trace(gordy.StageFail, "Bytes.Match", b.t, b.from, b.to, b.pred, i, err)
+			p.Trace(parser.StageFail, "Bytes.Match", b.t, b.from, b.to, b.pred, i, err)
 			return nil, err
 		}
 
-		p.Trace(gordy.StageTry, "Bytes.Match", b.t, b.from, b.to, b.pred, i)
+		p.Trace(parser.StageTry, "Bytes.Match", b.t, b.from, b.to, b.pred, i)
 		if !ok {
 			return nil, nil
 		}
@@ -141,11 +140,11 @@ func (b *Bytes) Match(p *gordy.Parser) (*parser.Match, error) {
 	for i := b.from + 1; i <= b.to; i++ {
 		c, ok, err := b.matchOne(p)
 		if err != nil {
-			p.Trace(gordy.StageFail, "Bytes.Match", b.t, b.from, b.to, b.pred, i, err)
+			p.Trace(parser.StageFail, "Bytes.Match", b.t, b.from, b.to, b.pred, i, err)
 			return nil, err
 		}
 
-		p.Trace(gordy.StageTry, "Bytes.Match", b.t, b.from, b.to, b.pred, i)
+		p.Trace(parser.StageTry, "Bytes.Match", b.t, b.from, b.to, b.pred, i)
 		if !ok {
 			break
 		}
@@ -154,13 +153,13 @@ func (b *Bytes) Match(p *gordy.Parser) (*parser.Match, error) {
 	}
 
 	m := &parser.Match{Tag: b.t, Content: []byte(string(bs))}
-	p.Trace(gordy.StageGot, "Bytes.Match", b.t, b.from, b.to, b.pred, m)
+	p.Trace(parser.StageGot, "Bytes.Match", b.t, b.from, b.to, b.pred, m)
 	return m, nil
 }
 
 // matchOne returns the matched byte and true or zero and false if no byte was
 // matched.
-func (b *Bytes) matchOne(p *gordy.Parser) (byte, bool, error) {
+func (b *Bytes) matchOne(p *parser.Input) (byte, bool, error) {
 	var bs [1]byte
 	_, err := p.Read(bs[:])
 	if err != nil {
