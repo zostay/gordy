@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zostay/gordy"
 	"github.com/zostay/gordy/match"
+	"github.com/zostay/gordy/parser"
 	"github.com/zostay/gordy/token"
 )
 
@@ -74,7 +74,7 @@ func Example() {
 	)
 
 	contact := "555-555-5555"
-	p := gordy.New(strings.NewReader(contact))
+	p := parser.New(strings.NewReader(contact))
 	m, err := MatchContactInfo.Match(p)
 	if err != nil {
 		panic(err)
