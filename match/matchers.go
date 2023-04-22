@@ -1,7 +1,6 @@
 package match
 
 import (
-	"github.com/zostay/gordy"
 	"github.com/zostay/gordy/parser"
 	"github.com/zostay/gordy/token"
 )
@@ -25,10 +24,10 @@ func selectLongest(ms []*parser.Match) int {
 // Longest returns a Matcher that tries all the given matchers against the
 // current input. It will keep the longest match found and discard the rest. It
 // that longest Match.
-func Longest(ms ...gordy.Matcher) gordy.MatcherFunc {
-	return func(p *gordy.Parser) (*parser.Match, error) {
+func Longest(ms ...parser.Matcher) parser.MatcherFunc {
+	return func(p *parser.Input) (*parser.Match, error) {
 		msm := make([]*parser.Match, len(ms))
-		msp := make([]*gordy.Parser, len(ms))
+		msp := make([]*parser.Input, len(ms))
 
 		for i, mp := range ms {
 			p := p.MayFail()
@@ -42,7 +41,7 @@ func Longest(ms ...gordy.Matcher) gordy.MatcherFunc {
 		}
 
 		if w := selectLongest(msm); w != -1 {
-			p.Trace(gordy.StageGot, "MatchLongest", w, msm[w])
+			p.Trace(parser.StageGot, "MatchLongest", w, msm[w])
 			msp[w].Keep()
 			return msm[w], nil
 		}
@@ -58,22 +57,22 @@ func Longest(ms ...gordy.Matcher) gordy.MatcherFunc {
 func ManyWithSep(
 	t token.Tag,
 	min int,
-	mtch gordy.Matcher,
-	sep gordy.Matcher,
-) gordy.MatcherFunc {
-	return func(p *gordy.Parser) (*parser.Match, error) {
+	mtch parser.Matcher,
+	sep parser.Matcher,
+) parser.MatcherFunc {
+	return func(p *parser.Input) (*parser.Match, error) {
 		mbs := make([]*parser.Match, 0)
 		ms := make([]*parser.Match, 0)
 		totalLen := 0
 
-		p.Trace(gordy.StageTry, "MatchManyWithSep", t, min, mtch, sep)
+		p.Trace(parser.StageTry, "MatchManyWithSep", t, min, mtch, sep)
 
 		for {
 			var pms [2]*parser.Match
 			if len(ms) > 0 {
 				m, err := sep.Match(p)
 				if err != nil {
-					p.Trace(gordy.StageFail, "MatchManyWithSep", t, min, mtch, sep, err)
+					p.Trace(parser.StageFail, "MatchManyWithSep", t, min, mtch, sep, err)
 					return nil, err
 				}
 
@@ -86,7 +85,7 @@ func ManyWithSep(
 
 			m, err := mtch.Match(p)
 			if err != nil {
-				p.Trace(gordy.StageFail, "MatchManyWithSep", t, min, mtch, sep, err)
+				p.Trace(parser.StageFail, "MatchManyWithSep", t, min, mtch, sep, err)
 				return nil, err
 			}
 
@@ -127,7 +126,7 @@ func ManyWithSep(
 			Submatch: mbs,
 		}
 
-		p.Trace(gordy.StageGot, "MatchManyWithSep", t, min, mtch, sep, m)
+		p.Trace(parser.StageGot, "MatchManyWithSep", t, min, mtch, sep, m)
 		return m, nil
 	}
 }
@@ -138,9 +137,9 @@ func ManyWithSep(
 func Many(
 	t token.Tag,
 	min int,
-	mtch gordy.Matcher,
-) gordy.MatcherFunc {
-	return func(p *gordy.Parser) (*parser.Match, error) {
+	mtch parser.Matcher,
+) parser.MatcherFunc {
+	return func(p *parser.Input) (*parser.Match, error) {
 		content := make([]byte, 0)
 		ms := make([]*parser.Match, 0, min)
 
@@ -171,15 +170,15 @@ func Many(
 			Submatch: ms,
 		}
 
-		p.Trace(gordy.StageGot, "MatchMany", t, min, mtch, m)
+		p.Trace(parser.StageGot, "MatchMany", t, min, mtch, m)
 		return m, nil
 	}
 }
 
 // First returns a matcher that will try each match and immediately returns on
 // the first one tried that succeeds. Returns no match if none succeed.
-func First(mtchs ...gordy.Matcher) gordy.MatcherFunc {
-	return func(p *gordy.Parser) (*parser.Match, error) {
+func First(mtchs ...parser.Matcher) parser.MatcherFunc {
+	return func(p *parser.Input) (*parser.Match, error) {
 		for _, mtch := range mtchs {
 			p := p.MayFail()
 
@@ -202,9 +201,9 @@ func First(mtchs ...gordy.Matcher) gordy.MatcherFunc {
 // fails. Returns the whole Match if every Matcher succeeds.
 func Seq(
 	t token.Tag,
-	mtchs ...gordy.Matcher,
-) gordy.MatcherFunc {
-	return func(p *gordy.Parser) (*parser.Match, error) {
+	mtchs ...parser.Matcher,
+) parser.MatcherFunc {
+	return func(p *parser.Input) (*parser.Match, error) {
 		ms := make([]*parser.Match, len(mtchs))
 		for i, mtch := range mtchs {
 			m, err := mtch.Match(p)
@@ -230,15 +229,15 @@ func Seq(
 func SeqNamed(
 	t token.Tag,
 	ms ...any,
-) gordy.MatcherFunc {
-	return func(p *gordy.Parser) (*parser.Match, error) {
+) parser.MatcherFunc {
+	return func(p *parser.Input) (*parser.Match, error) {
 		mps := make([]any, len(ms))
 		for i, mtch := range ms {
 			if i%2 == 0 {
 				continue
 			}
 
-			m, err := mtch.(gordy.Matcher).Match(p)
+			m, err := mtch.(parser.Matcher).Match(p)
 			if err != nil || m == nil {
 				return nil, err
 			}
@@ -255,9 +254,9 @@ func SeqNamed(
 // matches, but also returns an empty Match when the called Matcher does not
 // match. The token.Tag on the empty Match is token.None.
 func Optional(
-	mtch gordy.Matcher,
-) gordy.MatcherFunc {
-	return func(p *gordy.Parser) (*parser.Match, error) {
+	mtch parser.Matcher,
+) parser.MatcherFunc {
+	return func(p *parser.Input) (*parser.Match, error) {
 		m, err := TryAndKeep(mtch).Match(p)
 		if err != nil {
 			return nil, err
@@ -274,8 +273,8 @@ func Optional(
 // TryAndKeep returns a matcher that will call the given Matcher and try to
 // match against the input. On fail, input is restored to what it was before. On
 // success, input moves forward to whatever the Matcher consumed.
-func TryAndKeep(mtch gordy.Matcher) gordy.MatcherFunc {
-	return func(p *gordy.Parser) (*parser.Match, error) {
+func TryAndKeep(mtch parser.Matcher) parser.MatcherFunc {
+	return func(p *parser.Input) (*parser.Match, error) {
 		p = p.MayFail()
 
 		m, err := mtch.Match(p)
