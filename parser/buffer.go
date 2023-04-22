@@ -1,4 +1,4 @@
-package gordy
+package parser
 
 import (
 	"bufio"
