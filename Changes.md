@@ -1,4 +1,4 @@
-WIP  TBD
+v0.1.0  2023-04-21
 
  * Completely rewrote the system.
  * Added the parser.Input for allowing parsing against an io.Reader that can be 
