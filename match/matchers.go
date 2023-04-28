@@ -1,6 +1,8 @@
 package match
 
 import (
+	"unicode/utf8"
+
 	"github.com/zostay/gordy/parser"
 	"github.com/zostay/gordy/token"
 )
@@ -248,6 +250,56 @@ func SeqNamed(
 
 		return parser.BuildMatch(t, mps...), nil
 	}
+}
+
+// ByteSlice returns a Matcher that returns Match when the given byte slice
+// matches the next bytes in the input.
+func ByteSlice(
+	t token.Tag,
+	bs []byte,
+) parser.Matcher {
+	byteMatchers := make([]parser.Matcher, 0, len(bs))
+	for _, b := range bs {
+		byteMatchers = append(
+			byteMatchers,
+			OneByte(token.Literal, BytesInSet(b)),
+		)
+	}
+	return Seq(t, byteMatchers...)
+}
+
+// RuneSlice returns a Matcher that returns Match when the given rune slice
+// matches the next runes in the input.
+func RuneSlice(
+	t token.Tag,
+	rs []rune,
+) parser.Matcher {
+	runeMatchers := make([]parser.Matcher, 0, len(rs))
+	for _, r := range rs {
+		runeMatchers = append(
+			runeMatchers,
+			OneRune(token.Literal, RunesInSet(r)),
+		)
+	}
+	return Seq(t, runeMatchers...)
+}
+
+// String returns a Matcher that returns a Match when the given string matches
+// the next runes in the input.
+func String(
+	t token.Tag,
+	s string,
+) parser.Matcher {
+	runeMatchers := make([]parser.Matcher, 0, utf8.RuneCountInString(s))
+	for len(s) > 0 {
+		r, size := utf8.DecodeRuneInString(s)
+		runeMatchers = append(
+			runeMatchers,
+			OneRune(token.Literal, RunesInSet(r)),
+		)
+		s = s[size:]
+	}
+	return Seq(t, runeMatchers...)
 }
 
 // Optional returns a Matcher that returns the Match when the called Matcher
