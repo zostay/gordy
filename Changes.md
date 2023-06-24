@@ -1,4 +1,4 @@
-WIP  TBD
+v0.2.0  2023-06-23
 
  * Added match.ByteSlice, match.RuneSlice, and match.String matcher generators.
 
